@@ -6,7 +6,7 @@ from core.Parser import ParserManager
 import numpy as np
 import pickle
 import os
-from core.prompts import Preprocessing_prompt_fixed
+from core.prompts import Save_memory_prompt , Search_memory_prompt
 
 logger = get_logger("HIGH_level Memory started")
 
@@ -63,7 +63,7 @@ def Search_memory(query):
     search_result = []
     
     if len(query) >= 4:
-        res = generator.generator(Preprocessing_prompt_fixed(query))
+        res = generator.generator(Search_memory_prompt(query))
         extracted_query = parser.OutputManage(res)
         
         if extracted_query.get('type') == 'success':
@@ -113,46 +113,82 @@ def Search_memory(query):
         return [best['text']]
     else:
         return []
-
 def Save_memory(STM, User_inputs, Model_outputs=None):
     STM_context = f"User:{User_inputs}\nAssistant:{Model_outputs}"
     STM.append(STM_context)
     
-    if len(User_inputs) >= 6:
-        if Model_outputs is not None:
-            query = User_inputs + '\n' + Model_outputs
-        else:
-            query = User_inputs
-        res = generator.generator(Preprocessing_prompt_fixed(query))
-        Extracted = parser.OutputManage(res)
+
+    user_input_clean = User_inputs.strip()
+    
+
+    if user_input_clean.endswith('?') or user_input_clean.startswith('?'):
+        logger.info("Question detected, skipping save to LTM")
+        return STM
+    
+
+    if len(user_input_clean) < 15:
+        logger.info("Input too short, skipping save to LTM")
+        return STM
+
+
+    logger.info("Input passed filters, processing for LTM storage")
+    
+
+    if Model_outputs:
+        query = f"{User_inputs}\n{Model_outputs}"
+    else:
+        query = User_inputs
+
+    res = generator.generator(Save_memory_prompt(query))
+    Extracted = parser.OutputManage(res)
+    
+    if Extracted.get('type') != 'success':
+        logger.info("No meaningful memory to extract")
+        return STM
+    
+    Memory_types = Extracted.get("Memory", [])
+    Values = Extracted.get("Query", [])
+    
+    if not Memory_types or not Values:
+        logger.info("No memory type or value extracted")
+        return STM
+    
+    
+    saved_count = 0
+    for Mem_type in Memory_types:
+        if Mem_type not in LTM_index:
+            logger.warning(f"Unknown memory type: {Mem_type}")
+            continue
         
-        logger.info("saving Memory")
-        if Extracted.get('type') == 'success':
-            Memory_types = Extracted.get("Memory", [])
-            Values = Extracted.get("Query", [])
+        for Value in Values:
+            if not Value or len(Value.strip()) < 3:
+                continue
             
-            if Memory_types and Values:
-                for Mem_type in Memory_types:
-                    if Mem_type not in LTM_index:
-                        continue
-                    for Value in Values:
-                        if Value and len(Value.strip()) > 2:
-                            try:
-                                emb = generator.Encode(Value)
-                                if emb is None:
-                                    continue
-                                emb = emb.reshape(1, -1).astype(np.float32)
-                                faiss.normalize_L2(emb)
-                                importance = 0.5
-                                
-                                item = MemoryItem([Mem_type], Value, emb[0], importance)
-                                LTM_text[item.ID] = item
-                                
-                                LTM_index[Mem_type].add_with_ids(emb, np.array([item.ID], dtype=np.int64))
-                                print(f"saved {Mem_type}: {Value[:50]}...")
-                            except Exception as e:
-                                logger.error(f"Error saving: {e}")
-                                continue
+            try:
+                #  embedding
+                emb = generator.Encode(Value)
+                if emb is None:
+                    continue
+                
+                emb = emb.reshape(1, -1).astype(np.float32)
+                faiss.normalize_L2(emb)
+                
+            
+                importance = 0.6  #solid
+                item = MemoryItem([Mem_type], Value, emb[0], importance)
+                LTM_text[item.ID] = item
+                LTM_index[Mem_type].add_with_ids(emb, np.array([item.ID], dtype=np.int64))
+                
+                print(f"💾 saved {Mem_type}: {Value[:50]}...")
+                saved_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error saving memory: {e}")
+                continue
+    
+    if saved_count > 0:
+        logger.info(f"Saved {saved_count} memories to LTM")
+    else:
+        logger.info("No memories were saved")
     
     return STM
-

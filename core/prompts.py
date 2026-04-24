@@ -1,60 +1,57 @@
-def Preprocessing_prompt_fixed(query):
+def Search_memory_prompt(query):
     prompt = f"""
-You are a memory feature extractor. Convert user query to JSON with "type" (list) and "value" (list of strings).
+You are a query understanding system for memory search. Convert user question to search queries for different memory types.
 
 CRITICAL RULES:
-1. NEVER split a sentence into single words!
-2. Each value MUST be a COMPLETE phrase (minimum 3 words, maximum 15 words)
-3. Keep the original meaning and structure
-4. For definitions, keep the FULL definition as ONE value
+1. Extract search keywords for EACH memory type that might be relevant
+2. Each value MUST be a COMPLETE phrase (minimum 2 words, maximum 10 words)
+3. Keep the original meaning
+4. If user asks about themselves → identity type
+5. If user asks about definitions/concepts → semantic type  
+6. If user asks about feelings/preferences → emotional type
+7. If user asks about past events → episodic type
+8. If user asks about how to do something → procedural type
 
 TYPE DETECTION:
-- semantic: definitions, concepts, "X is Y", "X does Y", ML/AI terms
-- identity: name, age, live, born, phone, email, job, personal info
-- procedural: how to, steps, instructions, guides, "X does Y" for processes
-- emotional: feelings, love, hate, happy, sad, frustrated, excited
-- episodic: yesterday, last week, on Monday, before, earlier
+- identity: questions about "me", "my", "name", "age", "job", "live", "born", "I am"
+- semantic: questions about "what is", "definition", "concept", "meaning of"
+- procedural: questions about "how to", "steps", "instructions", "guide"
+- emotional: questions about "like", "love", "hate", "feel", "prefer"
+- episodic: questions about "yesterday", "before", "last time", "earlier", "remember when"
 
-VALUE RULES:
-- Combine related words into ONE phrase
-- Example: "RAG stands for retrieval augmented generation" → ONE value
-- Example: "FAISS was developed by Facebook research" → ONE value
-- Example: "Cosine similarity measures vector similarity" → ONE value
-- NEVER output: ["RAG", "stands", "for", "retrieval", "augmented", "generation"]
+OUTPUT FORMAT:
+{{"type": ["identity", "semantic", "emotional"], "query": ["search for identity", "search for semantic"]}}
 
 EXAMPLES:
 
-Query: "RAG stands for retrieval augmented generation"
-Output: {{"type": ["semantic"], "value": ["RAG stands for retrieval augmented generation"]}}
+Query: "what is my name?"
+Output: {{"type": ["identity"], "query": ["my name"]}}
 
-Query: "FAISS was developed by Facebook research"
-Output: {{"type": ["semantic"], "value": ["FAISS was developed by Facebook research"]}}
+Query: "what is RAG?"
+Output: {{"type": ["semantic"], "query": ["RAG definition"]}}
 
-Query: "Cosine similarity measures vector similarity"
-Output: {{"type": ["semantic"], "value": ["Cosine similarity measures vector similarity"]}}
+Query: "do you remember what I like?"
+Output: {{"type": ["identity", "emotional"], "query": ["what I like", "my preferences"]}}
 
-Query: "Python is a high-level programming language"
-Output: {{"type": ["semantic"], "value": ["Python is a high-level programming language"]}}
+Query: "what did we talk about yesterday?"
+Output: {{"type": ["episodic"], "query": ["yesterday conversation", "previous discussion"]}}
 
-Query: "Kubernetes is for container orchestration"
-Output: {{"type": ["semantic"], "value": ["Kubernetes is for container orchestration"]}}
+Query: "how do I install PyTorch?"
+Output: {{"type": ["procedural"], "query": ["install PyTorch", "how to install PyTorch"]}}
 
-Query: "my name is alireza and i am 28 years old"
-Output: {{"type": ["identity"], "value": ["my name is alireza", "i am 28 years old"]}}
+Query: "tell me about my interests and what I love"
+Output: {{"type": ["identity", "emotional"], "query": ["my interests", "what I love"]}}
 
-Query: "how to install python on windows"
-Output: {{"type": ["procedural"], "value": ["how to install python on windows"]}}
+Query: "what is my name and how old am I?"
+Output: {{"type": ["identity"], "query": ["my name", "my age"]}}
 
-Query: "i love python programming"
-Output: {{"type": ["emotional"], "value": ["i love python programming"]}}
-
-Query: "yesterday you taught me how to build a RAG system"
-Output: {{"type": ["episodic", "procedural"], "value": ["yesterday you taught me how to build a RAG system"]}}
+Query: "do you remember my job and where I live?"
+Output: {{"type": ["identity"], "query": ["my job", "where I live"]}}
 
 IMPORTANT REMINDERS:
-- NEVER split into single words
-- Keep phrases COMPLETE and MEANINGFUL
-- Each value should be a natural sentence
+- Return MULTIPLE types if the question asks about different things
+- Each query value should be a SEARCHABLE phrase
+- Keep queries short and meaningful
 
 Now process:
 Query: {query}
@@ -62,25 +59,24 @@ Query: {query}
 Output (JSON only, no extra text):
 """
     return prompt
-
-
-def summary_prompt_simple(items_list):
+def Save_memory_prompt(query):
     prompt = f"""
-Summarize this list. Keep important info only. Remove duplicates.
+    You are a memory extraction system. Extract ONLY factual, useful information for future conversations.
 
-RULES:
-- Output MUST be a list of STRINGS (not dictionaries)
-- Each item MUST be a plain text sentence
-- NO JSON objects, NO key-value pairs
+    RULES:
+    - Extract ONLY: name, age, job, interests, skills, definitions, concepts, how-to, past events
+    - IGNORE: greetings (hi, hello, nice to meet you), meta comments, questions, short phrases
+    - Minimum 3 words per extracted value
 
-Input: {items_list}
+    Output format: {{"type": ["identity/semantic/emotional/episodic/procedural"], "value": ["complete phrase"]}}
+    If nothing: {{"type": [], "value": []}}
 
-Output format: ["sentence1", "sentence2", ...]
+    Examples:
+    Input: "my name is alireza" → {{"type": ["identity"], "value": ["my name is alireza"]}}
+    Input: "nice to meet you" → {{"type": [], "value": []}}
+    Input: "I love Python" → {{"type": ["emotional"], "value": ["I love Python"]}}
+    Input: "how to install PyTorch" → {{"type": ["procedural"], "value": ["install PyTorch"]}}
 
-Example:
-Input: ["FAISS is a library", "FAISS was made by Facebook"]
-Output: ["FAISS is a library for similarity search"]
-
-Now output (ONLY the list, no extra text):
-"""
+    Now process: {query}
+    """
     return prompt
