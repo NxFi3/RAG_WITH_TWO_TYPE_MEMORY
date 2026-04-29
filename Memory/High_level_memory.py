@@ -110,7 +110,7 @@ def Search_memory(query):
     if sorted_results:
         best = sorted_results[0]
         LTM_text[best['ID']].update()
-        return [best['text']]
+        return [x['text'] for x in sorted_results[:3]]
     else:
         return []
 def Save_memory(STM, User_inputs, Model_outputs=None):
