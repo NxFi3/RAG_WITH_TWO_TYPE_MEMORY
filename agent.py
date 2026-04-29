@@ -3,9 +3,10 @@ from Memory.Memory_manager import MemoryManager
 from core.generator import GeneratorManager
 
 class Agent:
-    def __init__(self):
-        self.memory = MemoryManager(STM_SIZE=15)
-        self.generator = GeneratorManager()
+    def __init__(self,gen):
+        self.gen = gen
+        self.memory = MemoryManager(STM_SIZE=15,gen=self.gen)
+        
         self.memory.load_all()
     
     def chat(self, user_input: str) -> str:
@@ -25,7 +26,7 @@ User: {user_input}
 Assistant:"""
         
     
-        response = self.generator.generator(prompt)
+        response = self.gen.generator(prompt)
         
 
         self.memory.add_interaction(user_input, response)
@@ -35,7 +36,7 @@ Assistant:"""
     def save(self):
         self.memory.save_all()
 
-agent = Agent()
+agent = Agent(GeneratorManager())
 while True:
     inputs = input("You: ")
     print(agent.chat(inputs))

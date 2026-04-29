@@ -62,25 +62,25 @@ Output (JSON only, no extra text):
 
 def Save_memory_prompt(query):
     prompt = f"""
-You are a memory extraction system. Extract ONLY factual, useful information for future conversations.
+You are a memory extraction system. Extract ONLY factual, useful information.
 
 RULES:
-- Extract: name, age, job, interests, skills, definitions, concepts, how-to, past events
-- Extract: user naming the AI (e.g., "i name you X", "your name is X", "i call you X")
-- IGNORE: greetings (hi, hello, nice to meet you), meta comments, questions, short phrases
+- Extract: name, age, job, interests, skills, definitions, how-to, past events
+- Extract: user naming the AI (e.g., "i name you X", "your name is X")
+- IGNORE: greetings (hi, hello, nice to meet you), meta comments, questions
 - Minimum 3 words per extracted value
 
-Output format: {{"Memory": ["identity/semantic/emotional/episodic/procedural"], "value": ["complete phrase"]}}
-If nothing: {{"Memory": [], "value": []}}
+Output format: {{"Memory": ["identity/emotional/procedural/semantic/episodic"], "value": ["complete phrase"]}}
+If nothing important: {{"Memory": [], "value": []}}
 
 Examples:
-Input: "my name is alireza" → {{"Memory": ["identity"], "value": ["my name is alireza"]}}
-Input: "i name you diana" → {{"Memory": ["identity"], "value": ["AI's name is diana"]}}
-Input: "your name is sarah" → {{"Memory": ["identity"], "value": ["AI's name is sarah"]}}
-Input: "nice to meet you" → {{"Memory": [], "value": []}}
-Input: "I love Python" → {{"Memory": ["emotional"], "value": ["I love Python"]}}
-Input: "how to install PyTorch" → {{"Memory": ["procedural"], "value": ["install PyTorch"]}}
+"my name is X" → {{"Memory": ["identity"], "value": ["my name is X"]}}
+"i love AI" → {{"Memory": ["emotional"], "value": ["i love AI"]}}
+"i am building a RAG" → {{"Memory": ["procedural"], "value": ["i am building a RAG"]}}
+"yesterday i worked 5 hours" → {{"Memory": ["episodic"], "value": ["yesterday i worked 5 hours"]}}
+"RAG stands for retrieval generation" → {{"Memory": ["semantic"], "value": ["RAG stands for retrieval generation"]}}
+"nice to meet you" → {{"Memory": [], "value": []}}
 
-Now process: {query}
+Now: {query}
 """
     return prompt

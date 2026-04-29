@@ -81,40 +81,46 @@ class ParserManager:
                 continue
         
         return None
-
-    def OutputManage(self,text: str):
-        
+    def OutputManage(self, text: str):
         if not text or len(text.strip()) == 0:
             logger.warning("Empty output from LLM")
-            return {'type': 'error', 'message': 'empty output', 'Memory': ['code'], 'Query': None}
+            return {'type': 'error', 'message': 'empty output', 'Memory': [], 'Query': None}
+        
         data = None
         try:
             data = json.loads(text)
         except:
             pass
+        
         if data is None:
             try:
                 cleaned = self.clean_json_string(text)
                 data = json.loads(cleaned)
             except:
                 pass
+        
         if data is None:
             data = self.extract_json(text)
+        
         if data is None:
             logger.warning(f"Could not parse JSON from: {text[:200]}")
-            return {
-                'type': 'error', 
-                'message': 'no json found', 
-                'Memory': ['code'], 
-                'Query': None
-            }
-        memory_types = data.get("type", ["code"])
-        value = data.get("value", None)
+            return {'type': 'error', 'message': 'no json found', 'Memory': [], 'Query': None}
+    
+        memory_types = data.get("Memory", [])
+        value = data.get("value", [])
+        
+
+        if not memory_types:
+            memory_types = data.get("type", [])
+        
         if isinstance(memory_types, str):
             memory_types = [memory_types]
+
+        if not value:
+            return {'type': 'success', 'Memory': memory_types, 'Query': None}
+        
         return {
             'type': 'success',
             'Memory': memory_types,
             'Query': value
-
         }

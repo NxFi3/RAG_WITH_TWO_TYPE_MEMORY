@@ -32,7 +32,6 @@ try:
 except Exception as e:
     logger.error(f"Unexpected error: {e}")
     raise
-generator = GeneratorManager()
 
 
 def add_to_memory(data: np.ndarray, memory_id: uuid.UUID, metadata: dict = None):
@@ -68,12 +67,12 @@ def add_to_memory(data: np.ndarray, memory_id: uuid.UUID, metadata: dict = None)
 
 
 
-def search_memory(Query: str, k: int = 5):
+def search_memory(Query: str,gen, k: int = 5):
     try:
         if index.ntotal == 0:
             logger.warning("Index is empty")
             return [], []
-        query_embedding = generator.Encode(Query)
+        query_embedding = gen.Encode(Query)
         if query_embedding is None:
             logger.error("Encoding failed")
             return [], []

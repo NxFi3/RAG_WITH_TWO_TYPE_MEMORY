@@ -9,10 +9,11 @@ import time
 logger = get_logger("MEM")
 logger.info("MemoryManager started")
 
-generator = GeneratorManager()
+
 
 class MemoryManager:
-    def __init__(self, STM_SIZE: int = 15):  
+    def __init__(self,gen, STM_SIZE: int = 15):  
+        self.gen = gen
         self.stm = deque(maxlen=STM_SIZE)
         self.stm_size = STM_SIZE
     
@@ -20,7 +21,7 @@ class MemoryManager:
         
         
         if len(user_input) >= 500:
-            encoded = generator.Encode(user_input + ' ' + assistant_output)
+            encoded = self.gen.Encode(user_input + ' ' + assistant_output)
             if encoded is not None:
                 metadata = {
                     "text": f"{user_input} {assistant_output}",
@@ -31,19 +32,19 @@ class MemoryManager:
         
     
         stm_list = list(self.stm)
-        new_stm_list = Save_memory(stm_list, user_input, assistant_output)
+        new_stm_list = Save_memory(stm_list, user_input,self.gen, assistant_output)
         
         self.stm = deque(new_stm_list, maxlen=self.stm_size)
         logger.info(f"Added: {user_input[:50]}...")
 
     def search(self, query: str, efficient: bool = True):  
         if efficient:
-            return LowSearch(query)
+            return LowSearch(query,self.gen)
         else:
             if len(query) >= 500:
-                return LowSearch(query)
+                return LowSearch(query,self.gen)
             else:
-                return Search_memory(query)
+                return Search_memory(query,self.gen)
 
     def get_stm_context(self, last_n: int = 0):
         if last_n:

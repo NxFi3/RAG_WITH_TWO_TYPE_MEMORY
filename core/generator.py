@@ -6,7 +6,7 @@ import numpy as np
 
 logger = get_logger("GNR")
 logger.info("GENERATOR started")
-
+DIM = 768
 class GeneratorManager:
     def __init__(self, Model_Name: str = 'llama3.1:8B', Encoder_name: str = "E:\Multilingual-e5-base"): # iran the land of dedifficulty
         """SentenceTransformers ONLY for Encoder"""
@@ -60,4 +60,4 @@ class GeneratorManager:
         except Exception as e:
             logger.error(f"unexpected Error: {e}")
             
-            return np.zeros(384)  
+            return np.zeros(DIM)  
