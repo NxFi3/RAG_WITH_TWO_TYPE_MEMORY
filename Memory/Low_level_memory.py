@@ -10,7 +10,7 @@ logger = get_logger("LOWMEM")
 logger.info("LOW_LEVEL Memory Started")
 
 
-DIM = 384  
+DIM = 768  
 INDEX_FILE = "memory_index.faiss"
 DATA_FILE = "memory_data.pkl"
 

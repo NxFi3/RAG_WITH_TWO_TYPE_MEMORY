@@ -10,7 +10,7 @@ from core.prompts import Save_memory_prompt , Search_memory_prompt
 
 logger = get_logger("HIGH_level Memory started")
 
-DIM = 384 #default 
+DIM = 768 #default 
 
 LTM_index = {
     'identity': faiss.IndexIDMap(faiss.IndexFlatIP(DIM)),
