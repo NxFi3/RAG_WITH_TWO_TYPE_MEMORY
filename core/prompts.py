@@ -86,7 +86,7 @@ FORBIDDEN PATTERNS (NEVER extract):
 
 Output format: {{"Memory": ["type"], "value": ["exact phrase"]}}
 If nothing to extract: {{"Memory": [], "value": []}}
-
+DO NOT return any explanation, only JSON output.
 EXAMPLES:
 ✅ "my name is alireza" → {{"Memory": ["identity"], "value": ["my name is alireza"]}}
 ✅ "i hate math exams" → {{"Memory": ["emotional"], "value": ["i hate math exams"]}}
@@ -107,5 +107,4 @@ REMEMBER: If it's a question, request, or test, return EMPTY. Only extract REAL 
     return prompt
 
 def ImageProcessPrompt():
-    prompt = "Explain What you see in Image completely with all details."
-    return prompt
+    return "Describe this image in detail return ONLY ONE sentence. Tell me what you see, including objects, people, colors, and actions."

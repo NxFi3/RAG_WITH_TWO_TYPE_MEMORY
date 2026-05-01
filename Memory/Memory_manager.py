@@ -2,7 +2,8 @@ from Memory.High_level_memory import Save_memory, Search_memory, save_memory_to_
 from Memory.Low_level_memory import search_memory as LowSearch, persist_memory, load_persisted_memory, add_to_memory
 from Utils.logger import get_logger
 from collections import deque
-from core.generator import GeneratorManager
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 import uuid
 import time 
 
@@ -74,5 +75,31 @@ class MemoryManager:
             'stm_size': len(self.stm),
             'stm_max': self.stm_size
         }
+    # NOT COMPLETE
+    def ForgettingSystem(self):
+        from Memory.High_level_memory import LTM_index , LTM_text
+        logger.info(f"Forgetting Started for {len(LTM_text)} items")
+        delete_ids = []
+        memory_types = []
+        logger.info("Searching For Low RANK")
+        for ID in LTM_text:
+            item = LTM_text[ID]
+            if item.rank < 0.2:
+                delete_ids.append(ID)
+                memory_types.append(item.type)
+
+        logger.info(f"Removing {len(delete_ids)} low rank memories")
+        for ids ,type in zip(delete_ids , memory_types):
+            del LTM_text[ids]
+            LTM_index[type].remove_ids(ids)
+
+
+
+
+
+
+
+
+
 
 logger.info("MemoryManager ready")

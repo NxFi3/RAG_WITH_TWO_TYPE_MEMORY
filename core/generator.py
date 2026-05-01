@@ -37,26 +37,6 @@ class GeneratorManager:
         except Exception as e:
             logger.error(f"Generation Failed: {e}")
             return ''
-    def ImageProcess(self,IMG:bytes):
-        logger.info("VISION in process")
-        try:
-            messages = [  
-                {
-                    'role': 'user',
-                    'content': ImageProcessPrompt(),
-                    'images': [IMG]
-                }
-            ]
-            res = ollama.chat(
-                model=self.model_name,
-                messages=messages  
-            )
-            return res['message']['content'].strip()
-        except Exception as e:
-            logger.error(f"unexpected Error : {e}")
-            logger.error("VISION GEBERATION ERROR")
-            return "You Are Blind."
-
     def Encode(self, Prompt):
         logger.info(f"Encoding: {Prompt[:400]}")
         try:

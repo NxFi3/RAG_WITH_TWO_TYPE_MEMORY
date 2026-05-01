@@ -17,7 +17,7 @@ LTM_index = {
     "episodic": faiss.IndexIDMap(faiss.IndexFlatIP(DIM)),
     "procedural": faiss.IndexIDMap(faiss.IndexFlatIP(DIM)),
     "emotional": faiss.IndexIDMap(faiss.IndexFlatIP(DIM)),
-    "code": faiss.IndexIDMap(faiss.IndexFlatIP(DIM))
+    "code": faiss.IndexIDMap(faiss.IndexFlatIP(DIM)) # dont work yet?
 }
 LTM_text = {}
 
@@ -51,6 +51,28 @@ def load_memory_from_disk():
                 logger.info(f"Loaded {mem_type} index")
     except Exception as e:
         logger.error(f"Load failed: {e}")
+
+def Save_Search(gen, mem_type, query):
+
+    try:
+        emb = gen.Encode(query)
+        if emb is None:
+            return True  
+        
+        emb_value = emb.reshape(1, -1).astype(np.float32)
+        D, I = LTM_index[mem_type].search(emb_value, k=1)
+        
+       
+        if I[0][0] != -1 and D[0][0] >= 0.85:  
+            logger.info(f"Duplicate detected for '{query[:50]}...' (score: {D[0][0]:.3f})")
+            return False  
+        else:
+            return True  
+            
+    except Exception as e:
+        logger.error(f"Error in Save_Search: {e}")
+        return True 
+
 
 def Search_memory(query, gen):
     search_result = []
@@ -108,9 +130,9 @@ def Search_memory(query, gen):
         return [x['text'] for x in sorted_results[:3]]
     else:
         return []
-
+    
 def Save_memory(STM, User_inputs, gen, Model_outputs=None):
-    STM_context = f"User:{User_inputs}\nAssistant:{Model_outputs}"
+    STM_context = f"Previous_User:{User_inputs}\nPrevious_model:{Model_outputs}"
     STM.append(STM_context)
     
     user_input_clean = User_inputs.strip()
@@ -147,6 +169,7 @@ def Save_memory(STM, User_inputs, gen, Model_outputs=None):
         return STM
     
     saved_count = 0
+    
     for Mem_type in Memory_types:
         if Mem_type not in LTM_index:
             logger.warning(f"Unknown memory type: {Mem_type}")
@@ -154,6 +177,11 @@ def Save_memory(STM, User_inputs, gen, Model_outputs=None):
         
         for Value in Values:
             if not Value or len(Value.strip()) < 3:
+                continue
+            
+            
+            if not Save_Search(gen, Mem_type, Value):
+                logger.info(f"Skipping duplicate: {Value[:50]}...")
                 continue
             
             try:
@@ -168,7 +196,7 @@ def Save_memory(STM, User_inputs, gen, Model_outputs=None):
                 LTM_text[item.ID] = item
                 LTM_index[Mem_type].add_with_ids(emb, np.array([item.ID], dtype=np.int64))
                 
-                print(f"💾 saved {Mem_type}: {Value}...")
+                print(f"💾 saved {Mem_type}: {Value[:50]}...")
                 saved_count += 1
                 
             except Exception as e:

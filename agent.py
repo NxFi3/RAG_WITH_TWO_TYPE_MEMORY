@@ -43,7 +43,7 @@ Assistant:"""
             response
         )
         
-        return "AI: " + response
+        return "\nAI: " + response
     
     def chat(self, user_input: str) -> str:
     
