@@ -57,7 +57,7 @@ def Save_Search(gen, mem_type, query):
     try:
         emb = gen.Encode(query)
         if emb is None:
-            return True  
+            return False  
         
         emb_value = emb.reshape(1, -1).astype(np.float32)
         D, I = LTM_index[mem_type].search(emb_value, k=1)
@@ -78,10 +78,8 @@ def Search_memory(query, gen):
     search_result = []
     
     if len(query) >= 4:
-
         prompt_text = Search_memory_prompt(query)
         res = gen.generator(prompt_text)  
-        
         extracted_query = parser.OutputManage(res)
         
         if extracted_query.get('type') == 'success':
@@ -90,30 +88,30 @@ def Search_memory(query, gen):
             query_values = extracted_query.get('Query', [])
             
             if memory_types and query_values:
-                for mem_type in memory_types:
+               
+                for mem_type, value in zip(memory_types, query_values):
                     if mem_type not in LTM_index:
                         continue
                     
-                    for value in query_values:
-                        try:
-                            emb_value = gen.Encode(value)
-                            if emb_value is None:
-                                continue
-                            emb_value = emb_value.reshape(1, -1).astype(np.float32)
-                            
-                            D, I = LTM_index[mem_type].search(emb_value, k=3)
-                            
-                            for idx, ids in enumerate(I[0]):
-                                if ids != -1 and ids in LTM_text:
-                                    item = LTM_text[ids]
-                                    search_result.append({
-                                        'ID': item.ID,
-                                        'text': item.Value,
-                                        'score': float(D[0][idx]) if len(D[0]) > idx else 0
-                                    })
-                        except Exception as e:
-                            logger.error(f"Error encoding: {e}")
+                    try:
+                        emb_value = gen.Encode(value)
+                        if emb_value is None:
                             continue
+                        emb_value = emb_value.reshape(1, -1).astype(np.float32)
+                        
+                        D, I = LTM_index[mem_type].search(emb_value, k=3)
+                        
+                        for idx, ids in enumerate(I[0]):
+                            if ids != -1 and ids in LTM_text:
+                                item = LTM_text[ids]
+                                search_result.append({
+                                    'ID': item.ID,
+                                    'text': item.Value,
+                                    'score': float(D[0][idx]) if len(D[0]) > idx else 0
+                                })
+                    except Exception as e:
+                        logger.error(f"Error encoding: {e}")
+                        continue
     
     seen = set()
     unique = []
@@ -170,38 +168,37 @@ def Save_memory(STM, User_inputs, gen, Model_outputs=None):
     
     saved_count = 0
     
-    for Mem_type in Memory_types:
+    for Mem_type, Value in zip(Memory_types, Values):
         if Mem_type not in LTM_index:
             logger.warning(f"Unknown memory type: {Mem_type}")
             continue
         
-        for Value in Values:
-            if not Value or len(Value.strip()) < 3:
+        if not Value or len(Value.strip()) < 3:
+            continue
+        
+        if not Save_Search(gen, Mem_type, Value):
+            logger.info(f"Skipping duplicate: {Value[:50]}...")
+            continue
+        
+        try:
+            emb = gen.Encode(Value)
+            if emb is None:
                 continue
             
+            emb = emb.reshape(1, -1).astype(np.float32)
             
-            if not Save_Search(gen, Mem_type, Value):
-                logger.info(f"Skipping duplicate: {Value[:50]}...")
-                continue
+            importance = 0.6
+            item = MemoryItem([Mem_type], Value, emb[0], importance)
+            LTM_text[item.ID] = item
+            LTM_index[Mem_type].add_with_ids(emb, np.array([item.ID], dtype=np.int64))
             
-            try:
-                emb = gen.Encode(Value)
-                if emb is None:
-                    continue
-                
-                emb = emb.reshape(1, -1).astype(np.float32)
-                
-                importance = 0.6
-                item = MemoryItem([Mem_type], Value, emb[0], importance)
-                LTM_text[item.ID] = item
-                LTM_index[Mem_type].add_with_ids(emb, np.array([item.ID], dtype=np.int64))
-                
-                print(f"💾 saved {Mem_type}: {Value[:50]}...")
-                saved_count += 1
-                
-            except Exception as e:
-                logger.error(f"Error saving memory: {e}")
-                continue
+            print(f"💾 saved {Mem_type}: {Value[:50]}...")
+            saved_count += 1
+            
+        except Exception as e:
+            logger.error(f"Error saving memory: {e}")
+            continue
+
     
     if saved_count > 0:
         logger.info(f"Saved {saved_count} memories to LTM")
@@ -209,3 +206,10 @@ def Save_memory(STM, User_inputs, gen, Model_outputs=None):
         logger.info("No memories were saved")
     
     return STM
+
+def GetEmotional():
+    emotional_memories = []
+    for mem_id, item in LTM_text.items():
+        if 'emotional' in item.Memory_type:
+            emotional_memories.append(item.Value)
+    return emotional_memories

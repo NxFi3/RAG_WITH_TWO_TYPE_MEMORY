@@ -3,12 +3,12 @@ import requests
 import ollama
 from sentence_transformers import SentenceTransformer
 import numpy as np
-from core.prompts import ImageProcessPrompt
+
 logger = get_logger("GNR")
 logger.info("GENERATOR started")
 DIM = 768
 class GeneratorManager:
-    def __init__(self, Model_Name: str = 'llama3.1:8B', Encoder_name: str = "E:\Multilingual-e5-base"): # iran the land of dedifficulty
+    def __init__(self, Model_Name: str = 'llama3.1:8B', Encoder_name: str = "E:\Multilingual-e5-base"): 
         """SentenceTransformers ONLY for Encoder"""
         self.model_name = Model_Name
         try:
@@ -33,10 +33,10 @@ class GeneratorManager:
             
         except requests.exceptions.ConnectionError:
             logger.error("Could not connect to Ollama. Is it running?")
-            return ''
+            return 'ollama Problem'
         except Exception as e:
             logger.error(f"Generation Failed: {e}")
-            return ''
+            return 'Generation Failed'
     def Encode(self, Prompt):
         logger.info(f"Encoding: {Prompt[:400]}")
         try:

@@ -11,7 +11,8 @@ CRITICAL RULES:
 6. If user asks about feelings/preferences → emotional Memory
 7. If user asks about past events → episodic Memory
 8. If user asks about how to do something → procedural Memory
-
+9. Do NOT invent Memory TYPE
+10. OUTPUT ONLY in English
 Memory TYPE DETECTION:
 - identity: questions about "me", "my", "name", "age", "job", "live", "born", "I am"
 - semantic: questions about "what is", "definition", "concept", "meaning of"
@@ -69,7 +70,7 @@ ABSOLUTE RULES (NEVER BREAK):
 2. NEVER extract commands or requests ("help me", "can you", "tell me", "do this")
 3. NEVER extract meta comments about memory or testing
 4. ONLY extract when user shares NEW information about themselves or the world
-
+5. OUTPUT ONLY in English
 REQUIRED PATTERNS (only extract these):
 - "my name is X"
 - "i am X years old"  
@@ -87,13 +88,14 @@ FORBIDDEN PATTERNS (NEVER extract):
 Output format: {{"Memory": ["type"], "value": ["exact phrase"]}}
 If nothing to extract: {{"Memory": [], "value": []}}
 DO NOT return any explanation, only JSON output.
+Outpput MUST BE ONE JSON.
 EXAMPLES:
-✅ "my name is alireza" → {{"Memory": ["identity"], "value": ["my name is alireza"]}}
+✅ "my name is ali" → {{"Memory": ["identity"], "value": ["my name is ali"]}}
 ✅ "i hate math exams" → {{"Memory": ["emotional"], "value": ["i hate math exams"]}}
 ✅ "i am building a RAG system" → {{"Memory": ["procedural"], "value": ["i am building a RAG system"]}}
 ✅ "RAG stands for retrieval generation" → {{"Memory": ["semantic"], "value": ["RAG stands for retrieval generation"]}}
 ✅ "yesterday i worked 5 hours" → {{"Memory": ["episodic"], "value": ["yesterday i worked 5 hours"]}}
-
+✅ "my name is ali i am 17 years old" → {{"Memory": ["identity"], "value": ["my name is ali","i am 17 years old"]}}
 ❌ "what is your name?" → {{"Memory": [], "value": []}}
 ❌ "can you help me?" → {{"Memory": [], "value": []}}
 ❌ "i want to test memory" → {{"Memory": [], "value": []}}
@@ -108,3 +110,20 @@ REMEMBER: If it's a question, request, or test, return EMPTY. Only extract REAL 
 
 def ImageProcessPrompt():
     return "Describe this image in detail return ONLY ONE sentence. Tell me what you see, including objects, people, colors, and actions."
+
+def MainPrompt(User,RelevantMemory,RecentConversation):
+    prompt = f"""
+You Are HelpFul Ai.
+Answer User Based On Relevant memories 
+
+Relevant memories:
+{RelevantMemory}
+Recent Conversation:
+{RecentConversation}
+
+User:
+{User}
+
+"""
+    
+    return prompt

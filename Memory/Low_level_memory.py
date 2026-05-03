@@ -32,7 +32,25 @@ try:
 except Exception as e:
     logger.error(f"Unexpected error: {e}")
     raise
-
+def Save_search(Query:np.ndarray):
+    try:
+       
+        if Query is None :
+            return False  
+        
+        emb_value = Query.reshape(1, -1).astype(np.float32)
+        D, I = index.search(emb_value, k=1)
+        
+       
+        if I[0][0] != -1 and D[0][0] >= 0.85:  
+            logger.info(f"Duplicate detected for (score: {D[0][0]:.3f})")
+            return False  
+        else:
+            return True  
+            
+    except Exception as e:
+        logger.error(f"Error in Save_Search: {e}")
+        return True 
 
 def add_to_memory(data: np.ndarray, memory_id: uuid.UUID, metadata: dict = None):
     """
@@ -48,22 +66,23 @@ def add_to_memory(data: np.ndarray, memory_id: uuid.UUID, metadata: dict = None)
         if data.ndim == 1:
             data = data.reshape(1, -1)
         
-        
-        id_int = memory_id.int & 0x7FFFFFFFFFFFFFFF  
-        
-        
-        index.add_with_ids(data, np.array([id_int], dtype=np.int64))
-        
-        
-        if metadata:
-            memory_data[id_int] = metadata
-        
-        logger.debug(f"Memory saved with ID: {memory_id}")
-        return True
-        
+        if Save_search(data):
+            id_int = memory_id.int & 0x7FFFFFFFFFFFFFFF  
+            
+            
+            index.add_with_ids(data, np.array([id_int], dtype=np.int64))
+            
+            
+            if metadata:
+                memory_data[id_int] = metadata
+            
+            logger.debug(f"Memory saved with ID: {memory_id}")
+            return True
+        else:
+            return False  
     except Exception as e:
-        logger.error(f"Error saving memory: {e}")
-        return False
+            logger.error(f"Error saving memory: {e}")
+            return False
 
 
 

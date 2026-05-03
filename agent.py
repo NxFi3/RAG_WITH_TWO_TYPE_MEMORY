@@ -2,8 +2,9 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from Memory.Memory_manager import MemoryManager
 from core.generator import GeneratorManager
-
-class AsyncAgent:
+from Memory.High_level_memory import GetEmotional
+from core.prompts import MainPrompt
+class Agent:
     def __init__(self, gen):
         self.gen = gen
         self.memory = MemoryManager(STM_SIZE=15, gen=self.gen)
@@ -18,17 +19,8 @@ class AsyncAgent:
             self.memory.get_relevant_memory, 
             user_input
         )
-        
-        prompt = f"""You Are a helpful AI assistant.
-Previous conversation:
-{context['stm']}
-
-Relevant memories:
-{chr(10).join([f"- {m}" for m in context['ltm']])}
-
-User: {user_input}
-Assistant:"""
-        
+        prompt = MainPrompt(user_input,chr(10).join([f"- {m}" for m in context['ltm']]),context['stm'])
+           
         response = await loop.run_in_executor(
             self.executor,
             self.gen.generator,
@@ -50,8 +42,9 @@ Assistant:"""
         return asyncio.run(self.chat_async(user_input))
 
 async def main():
-    agent = AsyncAgent(GeneratorManager())
+    agent = Agent(GeneratorManager())
     while True:
+       
         user_input = input("You: ")
         if user_input.lower() in ['exit', 'quit']:
             agent.memory.save_all()
@@ -60,4 +53,3 @@ async def main():
         print(response)
 
 
-asyncio.run(main())
